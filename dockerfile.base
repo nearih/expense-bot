@@ -1,0 +1,14 @@
+FROM golang:1.12.10
+
+ENV TZ=Asia/Bangkok
+
+ENV GO111MODULE=on
+RUN mkdir /go/src/expense-bot
+COPY . /go/src/expense-bot
+WORKDIR /go/src/expense-bot
+
+RUN go mod download
+
+WORKDIR /go/src
+
+RUN rm -rf ./expense-bot && pwd && ls -lah /go/src
