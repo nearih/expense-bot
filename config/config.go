@@ -4,13 +4,17 @@ import (
 	"github.com/spf13/viper"
 )
 
-type config struct {
+type Line struct {
 	Channeltoken  string
 	Channelsecret string
+}
+
+type RootConfig struct {
+	Line          Line
 	SpreadsheetID string
 }
 
-var Config config
+var Config RootConfig
 
 func init() {
 	viper.SetConfigType("json")
