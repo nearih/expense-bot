@@ -12,6 +12,7 @@ type Line struct {
 type RootConfig struct {
 	Line          Line
 	SpreadsheetID string
+	SheetRange    string
 }
 
 var Config RootConfig

@@ -78,7 +78,7 @@ func insertToSpreadsheet(msg string) {
 
 	// login to google spread sheet
 	srv := loginGoogle()
-	sheetRange := "sheet1" // this mean an entire sheet
+	sheetRange := config.Config.SheetRange // this mean an entire sheet
 
 	// get current time
 	loc, err := time.LoadLocation("Asia/Bangkok")
@@ -87,12 +87,13 @@ func insertToSpreadsheet(msg string) {
 		return
 	}
 	date := time.Now().In(loc)
-	dateS := date.Format("02-01-2006")
+	dateS := date.Format("02/01/2006")
 
 	// get last row to verify, add month summary if it is new month
 	get, err := srv.Spreadsheets.Values.Get(config.Config.SpreadsheetID, sheetRange).Do()
 	if err != nil {
 		fmt.Println(err)
+		return
 	}
 
 	if len(get.Values) == 0 {
@@ -105,7 +106,7 @@ func insertToSpreadsheet(msg string) {
 		fmt.Println("not ok")
 		return
 	}
-	pOldDate, err := time.Parse("02-01-2006", lastDate)
+	pOldDate, err := time.Parse("02/01/2006", lastDate)
 	if err != nil {
 		fmt.Println("parse date error: ", err)
 		return
@@ -140,7 +141,8 @@ func insertToSpreadsheet(msg string) {
 
 	_, err = srv.Spreadsheets.Values.Append(config.Config.SpreadsheetID, sheetRange, rb).InsertDataOption("INSERT_ROWS").ValueInputOption("USER_ENTERED").Do()
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("append value error: ", err)
+		return
 	}
 
 	return
@@ -151,6 +153,7 @@ func loginGoogle() *sheets.Service {
 	srv, err := sheets.NewService(ctx, option.WithCredentialsFile("./creds.json"))
 	if err != nil {
 		log.Fatalf("Unable to retrieve Sheets client: %v", err)
+		return nil
 	}
 	return srv
 }
