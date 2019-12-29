@@ -13,6 +13,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o ./server main.go
 
 RUN pwd && ls -lah
 
+# make it alpine 
 FROM alpine:3.10.2
 
 COPY --from=0 /go/src/expense-bot/server .

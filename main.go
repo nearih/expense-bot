@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -16,22 +15,28 @@ import (
 	"google.golang.org/api/sheets/v4"
 )
 
-func Test(w http.ResponseWriter, r *http.Request) {
+// TestHandler is for connetion testing with rest-api
+func TestHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(200)
 	w.Write([]byte("success"))
 }
 
 func main() {
-	http.HandleFunc("/", Test)
+	insertToSpreadsheet("888")
+	http.HandleFunc("/", TestHandler)
 	http.HandleFunc("/bot", ExpenseBot)
-	fmt.Println("server is ready")
+	log.Println("server is ready")
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
+// ExpenseBot save line bot message to google spreadsheet
 func ExpenseBot(w http.ResponseWriter, r *http.Request) {
+	// new linebot client
 	bot, err := linebot.New(config.Config.Line.Channelsecret,
 		config.Config.Line.Channeltoken,
 	)
+
+	// get event from line request
 	events, err := bot.ParseRequest(r)
 	if err != nil {
 		if err == linebot.ErrInvalidSignature {
@@ -43,23 +48,22 @@ func ExpenseBot(w http.ResponseWriter, r *http.Request) {
 	}
 
 	msg := getMessage(events)
-	// msg := "95.5"
 	insertToSpreadsheet(msg)
+
+	// reply back to line
 	if _, err := bot.ReplyMessage(events[0].ReplyToken, linebot.NewTextMessage("เซฟให้เเล้วนะ :3")).Do(); err != nil {
-		fmt.Println(err)
+		log.Fatal(err)
 	}
 	w.WriteHeader(200)
 }
 
+// getMessage extracts msg from line event
 func getMessage(events []*linebot.Event) string {
 	for _, event := range events {
 		if event.Type == linebot.EventTypeMessage {
 			switch message := event.Message.(type) {
 			case *linebot.TextMessage:
-				fmt.Println("message.Text", message.Text)
-				// if _, err = bot.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(message.Text)).Do(); err != nil {
-				// 	fmt.Println(err)
-				// }
+				log.Println("message.Text", message.Text)
 				return message.Text
 			}
 		}
@@ -67,54 +71,60 @@ func getMessage(events []*linebot.Event) string {
 	return ""
 }
 
+// insertToSpreadsheet insert message to spreadsheet
 func insertToSpreadsheet(msg string) {
 
 	// convert msg to int
 	msgF, err := strconv.ParseFloat(msg, 64)
 	if err != nil {
-		fmt.Println("cannot convert msg", err)
+		log.Println("cannot convert msg", err)
 		return
 	}
 
 	// login to google spread sheet
 	srv := loginGoogle()
-	sheetRange := config.Config.SheetRange // this mean an entire sheet
+	sheetRange := config.Config.SheetRange // this is sheetName or tab name eg: sheet1
+	//you can specific column/row if not thing specify it mean an entire sheet
 
 	// get current time
 	loc, err := time.LoadLocation("Asia/Bangkok")
 	if err != nil {
-		fmt.Println("cannot load location: ", err)
+		log.Println("cannot load location: ", err)
 		return
 	}
 	date := time.Now().In(loc)
 	dateS := date.Format("02/01/2006")
 
-	// get last row to verify, add month summary if it is new month
+	// get last row to verify, add month name if it is new month
 	get, err := srv.Spreadsheets.Values.Get(config.Config.SpreadsheetID, sheetRange).Do()
 	if err != nil {
-		fmt.Println(err)
+		log.Println("srv.Spreadsheets.Values.Get: ", err)
 		return
 	}
 
 	if len(get.Values) == 0 {
-		fmt.Println("value out of range")
+		log.Println("value out of range, data now found")
 		return
 	}
 
 	lastDate, ok := (get.Values[len(get.Values)-1][0].(string))
 	if !ok {
-		fmt.Println("not ok")
-		return
-	}
-	pOldDate, err := time.Parse("02/01/2006", lastDate)
-	if err != nil {
-		fmt.Println("parse date error: ", err)
+		log.Println("cannot extract data from map")
 		return
 	}
 
-	if pOldDate.Month() != date.Month() {
+	// pLastDate = parsed last date
+	pLastDate, err := time.Parse("02/01/2006", lastDate)
+	if err != nil {
+		log.Println("parse date error: ", err)
+		return
+	}
+
+	if pLastDate.Month() != date.Month() {
+
 		// add value got from line and create new month
 		b := []interface{}{}
+
 		m := []interface{}{date.Month().String()}
 		v := []interface{}{dateS, msgF}
 		rb := &sheets.ValueRange{
@@ -124,11 +134,12 @@ func insertToSpreadsheet(msg string) {
 		rb.Values = append(rb.Values, m)
 		rb.Values = append(rb.Values, v)
 
-		_, err := srv.Spreadsheets.Values.Append(config.Config.SpreadsheetID, sheetRange, rb).InsertDataOption("INSERT_ROWS").ValueInputOption("USER_ENTERED").Do()
+		_, err := srv.Spreadsheets.Values.Append(config.Config.SpreadsheetID, sheetRange+"!A1:A1000", rb).InsertDataOption("INSERT_ROWS").ValueInputOption("USER_ENTERED").Do()
 		if err != nil {
-			fmt.Println("cannot append: ", err)
+			log.Println("cannot append: ", err)
 			return
 		}
+
 		return
 	}
 
@@ -141,13 +152,14 @@ func insertToSpreadsheet(msg string) {
 
 	_, err = srv.Spreadsheets.Values.Append(config.Config.SpreadsheetID, sheetRange, rb).InsertDataOption("INSERT_ROWS").ValueInputOption("USER_ENTERED").Do()
 	if err != nil {
-		fmt.Println("append value error: ", err)
+		log.Println("append value error: ", err)
 		return
 	}
 
 	return
 }
 
+// loginGoogle log in to google sheet sdk with credentialfile
 func loginGoogle() *sheets.Service {
 	ctx := context.Background()
 	srv, err := sheets.NewService(ctx, option.WithCredentialsFile("./creds.json"))
