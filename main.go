@@ -22,7 +22,6 @@ func TestHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	insertToSpreadsheet("888")
 	http.HandleFunc("/", TestHandler)
 	http.HandleFunc("/bot", ExpenseBot)
 	log.Println("server is ready")
