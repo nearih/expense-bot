@@ -25,7 +25,11 @@ func main() {
 	http.HandleFunc("/", TestHandler)
 	http.HandleFunc("/bot", ExpenseBot)
 	log.Println("server is ready")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	port := config.Config.Port
+	if (port==0) {
+		port = 8080	
+	}
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%v",port), nil))
 }
 
 // ExpenseBot save line bot message to google spreadsheet
