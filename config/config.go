@@ -13,6 +13,7 @@ type RootConfig struct {
 	Line          Line
 	SpreadsheetID string
 	SheetRange    string
+	Port          int
 }
 
 var Config RootConfig
