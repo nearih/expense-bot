@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -24,12 +25,12 @@ func TestHandler(w http.ResponseWriter, r *http.Request) {
 func main() {
 	http.HandleFunc("/", TestHandler)
 	http.HandleFunc("/bot", ExpenseBot)
-	log.Println("server is ready")
 	port := config.Config.Port
-	if (port==0) {
-		port = 8080	
+	if port == 0 {
+		port = 8080
 	}
-	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%v",port), nil))
+	log.Println("server is ready running at port", port)
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%v", port), nil))
 }
 
 // ExpenseBot save line bot message to google spreadsheet
@@ -86,9 +87,6 @@ func insertToSpreadsheet(msg string) {
 
 	// login to google spread sheet
 	srv := loginGoogle()
-	sheetRange := config.Config.SheetRange // this is sheetName or tab name eg: sheet1
-	//you can specific column/row if not thing specify it mean an entire sheet
-
 	// get current time
 	loc, err := time.LoadLocation("Asia/Bangkok")
 	if err != nil {
@@ -96,6 +94,12 @@ func insertToSpreadsheet(msg string) {
 		return
 	}
 	date := time.Now().In(loc)
+	year, _, _ := date.Date()
+	// sheetRange := config.Config.SheetRange // this is sheetName or tab name eg: sheet1
+
+	sheetRange := strconv.Itoa(year)
+	//you can specific column/row if not thing specify it mean an entire sheet
+
 	dateS := date.Format("02/01/2006")
 
 	// get last row to verify, add month name if it is new month
