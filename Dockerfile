@@ -1,4 +1,4 @@
-FROM expense/golang:1.12.10
+FROM golang:1.16.10
 
 ENV TZ=Asia/Bangkok
 
@@ -7,7 +7,7 @@ COPY . /go/src/expense-bot
 
 WORKDIR /go/src/expense-bot
 
-RUN go mod tidy
+# RUN go mod tidy
 
 RUN CGO_ENABLED=0 GOOS=linux go build -o ./server main.go
 
@@ -15,6 +15,7 @@ RUN pwd && ls -lah
 
 # make it alpine 
 FROM alpine:3.10.2
+ENV TZ=Asia/Bangkok
 
 COPY --from=0 /go/src/expense-bot/server .
 COPY --from=0 /go/src/expense-bot/creds.json .

@@ -6,9 +6,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/line/line-bot-sdk-go/linebot"
-
 	"expense-bot/config"
+	_ "time/tzdata"
+
+	"github.com/line/line-bot-sdk-go/linebot"
 
 	"golang.org/x/net/context"
 	"google.golang.org/api/option"
@@ -34,6 +35,9 @@ func ExpenseBot(w http.ResponseWriter, r *http.Request) {
 	bot, err := linebot.New(config.Config.Line.Channelsecret,
 		config.Config.Line.Channeltoken,
 	)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// get event from line request
 	events, err := bot.ParseRequest(r)
@@ -93,6 +97,7 @@ func insertToSpreadsheet(msg string) {
 	}
 	date := time.Now().In(loc)
 	dateS := date.Format("02/01/2006")
+	sheetRange = strconv.Itoa(date.Year())
 
 	// get last row to verify, add month name if it is new month
 	get, err := srv.Spreadsheets.Values.Get(config.Config.SpreadsheetID, sheetRange).Do()

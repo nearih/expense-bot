@@ -1,6 +1,6 @@
 module expense-bot
 
-go 1.12
+go 1.16
 
 require (
 	github.com/line/line-bot-sdk-go v6.3.0+incompatible
