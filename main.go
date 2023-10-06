@@ -39,6 +39,9 @@ func ExpenseBot(w http.ResponseWriter, r *http.Request) {
 	bot, err := linebot.New(config.Config.Line.Channelsecret,
 		config.Config.Line.Channeltoken,
 	)
+	if err != nil {
+		log.Println("new line bot error", err)
+	}
 
 	// get event from line request
 	events, err := bot.ParseRequest(r)
@@ -100,7 +103,9 @@ func insertToSpreadsheet(msg string) {
 	sheetRange := strconv.Itoa(year)
 	//you can specific column/row if not thing specify it mean an entire sheet
 
-	dateS := date.Format("02/01/2006")
+	// dateS := date.Format("02/01/2006")
+	// use data format MM/DD/YYYY
+	dateS := date.Format("01/02/2006")
 
 	// get last row to verify, add month name if it is new month
 	get, err := srv.Spreadsheets.Values.Get(config.Config.SpreadsheetID, sheetRange).Do()
@@ -121,7 +126,8 @@ func insertToSpreadsheet(msg string) {
 	}
 
 	// pLastDate = parsed last date
-	pLastDate, err := time.Parse("02/01/2006", lastDate)
+	// pLastDate, err := time.Parse("02/01/2006", lastDate)
+	pLastDate, err := time.Parse("01/02/2006", lastDate)
 	if err != nil {
 		log.Println("parse date error: ", err)
 		return
